@@ -1,0 +1,93 @@
+##Objective 1: System Health Monitoring Script (Python)
+
+import psutil
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(filename='/var/log/system_health.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+
+# Thresholds
+CPU_THRESHOLD = 80.0
+MEMORY_THRESHOLD = 80.0
+DISK_THRESHOLD = 80.0
+
+def check_cpu_usage():
+    usage = psutil.cpu_percent(interval=1)
+    if usage > CPU_THRESHOLD:
+        logging.warning(f"High CPU usage detected: {usage}%")
+    return usage
+
+def check_memory_usage():
+    usage = psutil.virtual_memory().percent
+    if usage > MEMORY_THRESHOLD:
+        logging.warning(f"High Memory usage detected: {usage}%")
+    return usage
+
+def check_disk_usage():
+    usage = psutil.disk_usage('/').percent
+    if usage > DISK_THRESHOLD:
+        logging.warning(f"Low Disk space available: {usage}% used")
+    return usage
+
+def log_running_processes():
+    processes = [(proc.info['name'], proc.info['cpu_percent'], proc.info['memory_percent']) for proc in psutil.process_iter(['name', 'cpu_percent', 'memory_percent'])]
+    for proc in processes:
+        if proc[1] > CPU_THRESHOLD or proc[2] > MEMORY_THRESHOLD:
+            logging.warning(f"High resource usage by process {proc[0]} - CPU: {proc[1]}%, Memory: {proc[2]}%")
+
+def main():
+    logging.info("Starting system health check")
+    cpu = check_cpu_usage()
+    memory = check_memory_usage()
+    disk = check_disk_usage()
+    log_running_processes()
+    logging.info(f"CPU Usage: {cpu}%, Memory Usage: {memory}%, Disk Usage: {disk}%")
+    logging.info("System health check complete")
+
+if __name__ == "__main__":
+    main()
+
+###Objective 2: Automated Backup Solution (Bash)
+#!/bin/bash
+
+# Configurations
+SOURCE_DIR="/path/to/source"
+DESTINATION_DIR="/path/to/remote/backup"
+REMOTE_SERVER="user@remote.server.com"
+LOG_FILE="/var/log/backup.log"
+DATE=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Perform the backup
+rsync -avz --delete "$SOURCE_DIR" "$REMOTE_SERVER":"$DESTINATION_DIR" > /tmp/backup.log 2>&1
+STATUS=$?
+
+# Log the result
+if [ $STATUS -eq 0 ]; then
+    echo "$DATE - Backup succeeded" >> "$LOG_FILE"
+else
+    echo "$DATE - Backup failed" >> "$LOG_FILE"
+    cat /tmp/backup.log >> "$LOG_FILE"
+fi
+
+# Clean up
+rm /tmp/backup.log
+
+##System Health Monitoring Script:
+##1.Install the required Python package
+pip install psutil
+##Save the script as system_health_monitor.py
+
+###Make the script executable
+chmod +x system_health_monitor.py
+
+##Run the script:
+./system_health_monitor.py
+##Check the log file at /var/log/system_health.log for alerts.
+##Automated Backup Solution:
+##Save the script as automated_backup.sh.
+##Make the script executable
+chmod +x automated_backup.sh
+##Run the script
+./automated_backup.sh
+##Check the log file at /var/log/backup.log for the backup status.
